@@ -207,16 +207,23 @@ def main():
     # Configuration
     HEIGHT, WIDTH = 10, 10
     
-    # Créer le même labyrinthe que pour l'entraînement
-    print("\n[1/3] Chargement du labyrinthe...")
-    # IMPORTANT : Utiliser le MÊME type que dans train.py !
-    # Si train.py utilise empty_maze, utilise empty_maze ici aussi
-    # maze = MazeGenerator.empty_maze(HEIGHT, WIDTH)  # Labyrinthe vide
-    # OU si tu veux avec obstacles (doit être identique à train.py) :
-    maze = MazeGenerator.simple_maze(HEIGHT, WIDTH, obstacle_ratio=0.2)
-    start = (0, 0)
-    goal = (HEIGHT - 1, WIDTH - 1)
-    maze = MazeGenerator.ensure_path_exists(maze, start, goal)
+    # Charger le labyrinthe utilisé pendant l'entraînement
+    print("\n[1/3] Chargement du labyrinthe d'entraînement...")
+    try:
+        maze_data = np.load('saved_models/training_maze.npz')
+        maze = maze_data['maze']
+        start = tuple(maze_data['start'])
+        goal = tuple(maze_data['goal'])
+        print(f"  ✅ Labyrinthe d'entraînement chargé")
+    except FileNotFoundError:
+        print("  ⚠️  Pas de labyrinthe sauvegardé, génération aléatoire...")
+        # IMPORTANT : Utiliser le MÊME type que dans train.py !
+        # maze = MazeGenerator.empty_maze(HEIGHT, WIDTH)
+        # ou 
+        maze = MazeGenerator.simple_maze(HEIGHT, WIDTH, obstacle_ratio=0.2)
+        start = (0, 0)
+        goal = (HEIGHT - 1, WIDTH - 1)
+        maze = MazeGenerator.ensure_path_exists(maze, start, goal)
     
     env = MazeEnvironment(maze, start, goal)
     print("  Labyrinthe chargé!")

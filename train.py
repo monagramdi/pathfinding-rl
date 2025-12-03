@@ -134,10 +134,13 @@ def main():
     
     # Configuration
     HEIGHT, WIDTH = 10, 10
-    N_EPISODES = 10000
+    N_EPISODES = 2000
     
     # Créer le labyrinthe
     print("\n[1/4] Génération du labyrinthe...")
+    # Pour commencer : labyrinthe vide (plus facile)
+    # maze = MazeGenerator.empty_maze(HEIGHT, WIDTH)
+    # Ou avec obstacles (plus difficile) :
     maze = MazeGenerator.simple_maze(HEIGHT, WIDTH, obstacle_ratio=0.2)
     
     # Positions start et goal
@@ -146,6 +149,11 @@ def main():
     
     # S'assurer qu'un chemin existe
     maze = MazeGenerator.ensure_path_exists(maze, start, goal)
+    
+    # IMPORTANT : Sauvegarder le labyrinthe pour le test
+    print("  Sauvegarde du labyrinthe pour le test...")
+    np.savez('saved_models/training_maze.npz', 
+             maze=maze, start=start, goal=goal)
     
     print(f"  Labyrinthe: {HEIGHT}x{WIDTH}")
     print(f"  Start: {start}, Goal: {goal}")
@@ -163,10 +171,10 @@ def main():
     print("\n[3/4] Initialisation de l'agent...")
     agent = QLearningAgent(
         n_actions=4,
-        learning_rate=0.15,
+        learning_rate=0.1,
         discount_factor=0.95,
         epsilon=1.0,
-        epsilon_decay=0.998,
+        epsilon_decay=0.995,
         epsilon_min=0.01
     )
     print("  Agent Q-Learning initialisé!")
