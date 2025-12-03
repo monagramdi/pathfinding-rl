@@ -134,7 +134,7 @@ def main():
     
     # Configuration
     HEIGHT, WIDTH = 10, 10
-    N_EPISODES = 5000
+    N_EPISODES = 10000
     
     # Créer le labyrinthe
     print("\n[1/4] Génération du labyrinthe...")
@@ -163,10 +163,10 @@ def main():
     print("\n[3/4] Initialisation de l'agent...")
     agent = QLearningAgent(
         n_actions=4,
-        learning_rate=0.1,
+        learning_rate=0.15,
         discount_factor=0.95,
         epsilon=1.0,
-        epsilon_decay=0.995,
+        epsilon_decay=0.998,
         epsilon_min=0.01
     )
     print("  Agent Q-Learning initialisé!")

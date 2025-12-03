@@ -6,7 +6,8 @@ from agent import QLearningAgent
 import time
 
 def test_agent(env: MazeEnvironment, agent: QLearningAgent, 
-               render: bool = True, delay: float = 0.2, max_steps: int = 200) -> dict:
+               render: bool = True, delay: float = 0.2, max_steps: int = 200,
+               test_epsilon: float = 0.1) -> dict:
     """
     Teste l'agent sur un épisode.
     
@@ -16,6 +17,7 @@ def test_agent(env: MazeEnvironment, agent: QLearningAgent,
         render: Afficher l'environnement
         delay: Délai entre les steps (secondes)
         max_steps: Nombre maximum de steps (sécurité)
+        test_epsilon: Epsilon pour le test (0.1 = 10% exploration)
     
     Returns:
         results: Dictionnaire avec résultats du test
@@ -26,40 +28,56 @@ def test_agent(env: MazeEnvironment, agent: QLearningAgent,
     path = [state]
     steps = 0
     
+    # Sauvegarder l'epsilon original et le remplacer temporairement
+    original_epsilon = agent.epsilon
+    agent.epsilon = test_epsilon  # Ajouter un peu d'exploration pour le test
+    
     if render:
         print("\n" + "=" * 60)
         print("TEST - Exécution de l'agent entraîné")
+        print(f"(avec epsilon={test_epsilon} pour éviter les blocages)")
         print("=" * 60)
         env.render()
         time.sleep(delay)
     
     while not done and steps < max_steps:
-        # Action greedy (pas d'exploration)
-        action = agent.get_action(state, training=False)
+        # Action avec un peu d'exploration
+        action = agent.get_action(state, training=True)  # training=True pour utiliser epsilon
         next_state, reward, done, info = env.step(action)
         
         total_reward += reward
         path.append(next_state)
         state = next_state
+        steps += 1
         
         if render:
             env.render()
             action_names = ['Haut', 'Bas', 'Gauche', 'Droite']
-            print(f"Action: {action_names[action]} | Reward: {reward:.2f}")
+            print(f"Step {steps}/{max_steps} | Action: {action_names[action]} | Reward: {reward:.2f}")
             time.sleep(delay)
+    
+    # Restaurer l'epsilon original
+    agent.epsilon = original_epsilon
+    
+    # Vérifier si timeout
+    if steps >= max_steps and not done:
+        info = {'reason': 'timeout'}
+        if render:
+            print("\n⏱️  TIMEOUT - Limite de steps atteinte!")
     
     if render:
         print("\n" + "=" * 60)
         print("RÉSULTATS")
         print("=" * 60)
         print(f"Raison d'arrêt: {info['reason']}")
-        print(f"Steps total: {env.steps}")
+        print(f"Steps total: {steps}")
         print(f"Récompense totale: {total_reward:.2f}")
-        print(f"Succès: {'✅ OUI' if info['reason'] == 'goal_reached' else '❌ NON'}")
+        success_reasons = ['goal_reached']
+        print(f"Succès: {'✅ OUI' if info['reason'] in success_reasons else '❌ NON'}")
     
     results = {
         'success': info['reason'] == 'goal_reached',
-        'steps': env.steps,
+        'steps': steps,
         'reward': total_reward,
         'path': path,
         'reason': info['reason']
@@ -126,9 +144,12 @@ def visualize_path(env: MazeEnvironment, path: list, save_path: str = None):
 
 
 def evaluate_agent(env: MazeEnvironment, agent: QLearningAgent, 
-                   n_tests: int = 100) -> dict:
+                   n_tests: int = 100, test_epsilon: float = 0.1) -> dict:
     """
     Évalue l'agent sur plusieurs épisodes.
+    
+    Args:
+        test_epsilon: Epsilon pour l'évaluation (petit pour éviter blocages)
     
     Returns:
         stats: Statistiques d'évaluation
@@ -142,7 +163,7 @@ def evaluate_agent(env: MazeEnvironment, agent: QLearningAgent,
     total_rewards = []
     
     for i in range(n_tests):
-        results = test_agent(env, agent, render=False)
+        results = test_agent(env, agent, render=False, test_epsilon=test_epsilon)
         
         if results['success']:
             successes += 1
@@ -188,6 +209,10 @@ def main():
     
     # Créer le même labyrinthe que pour l'entraînement
     print("\n[1/3] Chargement du labyrinthe...")
+    # IMPORTANT : Utiliser le MÊME type que dans train.py !
+    # Si train.py utilise empty_maze, utilise empty_maze ici aussi
+    # maze = MazeGenerator.empty_maze(HEIGHT, WIDTH)  # Labyrinthe vide
+    # OU si tu veux avec obstacles (doit être identique à train.py) :
     maze = MazeGenerator.simple_maze(HEIGHT, WIDTH, obstacle_ratio=0.2)
     start = (0, 0)
     goal = (HEIGHT - 1, WIDTH - 1)
@@ -212,7 +237,7 @@ def main():
     
     # Test visuel
     print("\n[3/3] Test de l'agent...")
-    results = test_agent(env, agent, render=True, delay=0.3)
+    results = test_agent(env, agent, render=True, delay=0.3, max_steps=200, test_epsilon=0.1)
     
     # Visualiser le chemin
     if results['success']:

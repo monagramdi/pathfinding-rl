@@ -44,7 +44,17 @@ class QLearningAgent:
             return np.random.randint(self.n_actions)
         else:
             # Exploitation: meilleure action
-            return np.argmax(self.q_table[state])
+            q_values = self.q_table[state]
+            
+            # Si toutes les Q-values sont égales (état jamais vu), choisir aléatoire
+            if np.all(q_values == q_values[0]):
+                return np.random.randint(self.n_actions)
+            
+            # Sinon, prendre la meilleure action
+            # Avec tie-breaking aléatoire si plusieurs actions ont le même Q-value max
+            max_q = np.max(q_values)
+            best_actions = np.where(q_values == max_q)[0]
+            return np.random.choice(best_actions)
     
     def update(self, state: Tuple[int, int], action: int, reward: float,
                next_state: Tuple[int, int], done: bool):
